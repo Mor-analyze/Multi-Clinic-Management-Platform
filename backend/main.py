@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from app.routes import auth, imports, patients, staff, invoices, payments, expenses, analytics,inventory
+from app.routes import auth, imports, patients, staff, invoices, payments, expenses, analytics,inventory,devices
 
 load_dotenv()
 
@@ -28,7 +28,7 @@ app.include_router(payments.router)
 app.include_router(expenses.router)
 app.include_router(analytics.router)
 app.include_router(inventory.router)
-
+app.include_router(devices.router)
 
 
 

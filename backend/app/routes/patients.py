@@ -166,11 +166,17 @@ def get_patient(
             "balance": float(invoice.balance) if invoice else 0,
         }
 
-        if service and service.assessment_type != AssessmentType.none:
+        is_assessment = (
+            service is not None and 
+            service.assessment_type is not None and 
+            service.assessment_type != AssessmentType.none
+        )
+
+        if is_assessment:
             assessments.append(session_data)
         else:
             regular_sessions.append(session_data)
-
+    
     # Invoice totals
     invoice_totals = db.query(
         func.sum(Invoice.total),

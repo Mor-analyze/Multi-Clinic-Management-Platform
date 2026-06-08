@@ -6,6 +6,12 @@ import ClinicOverview from './pages/ClinicOverview';
 import Layout from './components/Layout';
 import Patients from './pages/Patients';
 import PatientProfile from './pages/PatientProfile';
+import Staff from './pages/Staff';
+import Devices from './pages/Devices';
+import JaneImport from './pages/JaneImport';
+
+
+
 
 
 
@@ -50,12 +56,12 @@ function App() {
           {/* TouchBrain */}
           <Route path="/tb/overview" element={<ProtectedRoute><ClinicOverview clinicId={TB_CLINIC} clinicName="TouchBrain Counseling" color="#5B8FFF" /></ProtectedRoute>} />
           <Route path="/tb/services" element={<ProtectedRoute><ComingSoon label="TouchBrain — Services" /></ProtectedRoute>} />
-          <Route path="/tb/devices" element={<ProtectedRoute><ComingSoon label="TouchBrain — Devices" /></ProtectedRoute>} />
+          <Route path="/tb/devices" element={<ProtectedRoute><Devices /></ProtectedRoute>} />
           <Route path="/tb/materials" element={<ProtectedRoute><ComingSoon label="TouchBrain — Materials" /></ProtectedRoute>} />
-          <Route path="/tb/staff" element={<ProtectedRoute><ComingSoon label="TouchBrain — Staff" /></ProtectedRoute>} />
+          <Route path="/tb/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
           <Route path="/tb/patients" element={<ProtectedRoute><Patients /></ProtectedRoute>} />
           <Route path="/tb/expenses" element={<ProtectedRoute><ComingSoon label="TouchBrain — Expenses" /></ProtectedRoute>} />
-          <Route path="/tb/import" element={<ProtectedRoute><ComingSoon label="Jane Import" /></ProtectedRoute>} />
+          <Route path="/tb/import" element={<ProtectedRoute><JaneImport /></ProtectedRoute>} />
           <Route path="/tb/patients/:id" element={<ProtectedRoute><PatientProfile /></ProtectedRoute>} />
 
         </Routes>

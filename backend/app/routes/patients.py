@@ -239,3 +239,28 @@ def update_patient(
 
     db.commit()
     return {"message": "Patient updated"}
+
+@router.patch("/{patient_id}/sessions/{session_id}")
+def update_session_service(
+    patient_id: str,
+    session_id: str,
+    updates: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    session = db.query(SessionModel).filter(
+        SessionModel.id == uuid.UUID(session_id),
+        SessionModel.patient_id == uuid.UUID(patient_id)
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if "service_id" in updates and updates["service_id"]:
+        session.service_id = uuid.UUID(updates["service_id"])
+
+    if "notes" in updates:
+        session.notes = updates["notes"]
+
+    db.commit()
+    return {"message": "Session updated"}

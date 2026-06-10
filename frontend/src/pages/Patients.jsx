@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSort } from '../hooks/useSort';
 import { useNavigate } from 'react-router-dom';
 import { getPatients } from '../services/api';
 
@@ -19,6 +20,8 @@ export default function Patients() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState(null);
   const navigate = useNavigate();
+  const { sorted: sortedPatients, handleSort, SortIcon } = useSort(patients, 'last_visit','desc');
+
 
   useEffect(() => {
     loadPatients();
@@ -102,9 +105,22 @@ export default function Patients() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: D.surface }}>
-              {['Patient', 'Phone', 'City', 'First Visit', 'Last Visit', 'Sessions', 'Total Billed', 'Status'].map(h => (
-                <th key={h} style={{ padding: '9px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: D.muted, textTransform: 'uppercase', letterSpacing: 1, borderBottom: `1px solid ${D.border}`, whiteSpace: 'nowrap' }}>{h}</th>
-              ))}
+          {[
+            { label: 'Patient', key: 'last_name' },
+            { label: 'Phone', key: 'phone' },
+            { label: 'City', key: 'city' },
+            { label: 'First Visit', key: 'first_visit' },
+            { label: 'Last Visit', key: 'last_visit' },
+            { label: 'Sessions', key: 'total_sessions' },
+            { label: 'Total Billed', key: 'total_cost' },
+            { label: 'Status', key: 'is_active' },
+          ].map(h => (
+            <th key={h.label}
+              onClick={() => handleSort(h.key)}
+              style={{ padding: '9px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: D.muted, textTransform: 'uppercase', letterSpacing: 1, borderBottom: `1px solid ${D.border}`, whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none' }}>
+              {h.label}<SortIcon colKey={h.key} />
+            </th>
+          ))}
             </tr>
           </thead>
           <tbody>
@@ -112,7 +128,7 @@ export default function Patients() {
               <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: D.muted }}>Loading...</td></tr>
             ) : patients.length === 0 ? (
               <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: D.muted }}>No patients found</td></tr>
-            ) : patients.map((p, i) => (
+            ) : sortedPatients.map((p, i) => (
               <tr key={p.id} onClick={() => navigate(`/tb/patients/${p.id}`)}
                 style={{ background: i % 2 === 0 ? 'transparent' : D.surface + '44' }}>
                 <td style={{ padding: '11px 14px', borderBottom: `1px solid ${D.border}` }}>

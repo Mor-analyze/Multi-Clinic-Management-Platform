@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+import openpyxl
+import io
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional, List
@@ -154,3 +156,158 @@ def get_patient_payments(
         "notes": p.notes,
         "duplicate_override": p.duplicate_override,
     } for p in payments]
+    
+    
+    
+@router.post("/import")
+async def import_payments_excel(
+    file: UploadFile = File(...),
+    clinic_id: str = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    contents = await file.read()
+    wb = openpyxl.load_workbook(io.BytesIO(contents), data_only=True)
+
+    sheet_name = None
+    for name in wb.sheetnames:
+        if name.lower() in ["payments", "sheet1"] and "sample" not in name.lower() and "guide" not in name.lower():
+            sheet_name = name
+            break
+
+    if not sheet_name:
+        raise HTTPException(status_code=400, detail="Could not find Payments sheet")
+
+    ws = wb[sheet_name]
+
+    # Find headers
+    headers = {}
+    header_row = None
+    for row in ws.iter_rows():
+        for cell in row:
+            if cell.value and str(cell.value).strip().lower() in ["date", "patient jane id", "amount", "method", "reference #", "notes"]:
+                header_row = cell.row
+                break
+        if header_row:
+            break
+
+    if not header_row:
+        raise HTTPException(status_code=400, detail="Could not find header row")
+
+    for cell in ws[header_row]:
+        if cell.value:
+            h = str(cell.value).strip().lower()
+            if h == "date": headers["date"] = cell.column
+            elif h in ["patient jane id", "patient id"]: headers["patient_id"] = cell.column
+            elif h in ["amount", "amount (cad)"]: headers["amount"] = cell.column
+            elif h == "method": headers["method"] = cell.column
+            elif h in ["reference #", "reference"]: headers["reference"] = cell.column
+            elif h == "notes": headers["notes"] = cell.column
+
+    created = 0
+    skipped = 0
+    errors = []
+
+    for row in ws.iter_rows(min_row=header_row + 1, values_only=True):
+        try:
+            if not any(row):
+                continue
+
+            date_val = row[headers["date"] - 1] if "date" in headers else None
+            jane_id = str(row[headers["patient_id"] - 1]).strip() if "patient_id" in headers and row[headers["patient_id"] - 1] else None
+            amount_val = row[headers["amount"] - 1] if "amount" in headers else None
+            method_val = str(row[headers["method"] - 1]).strip().lower() if "method" in headers and row[headers["method"] - 1] else None
+            reference_val = str(row[headers["reference"] - 1]).strip() if "reference" in headers and row[headers["reference"] - 1] else None
+            notes_val = str(row[headers["notes"] - 1]).strip() if "notes" in headers and row[headers["notes"] - 1] else None
+
+            if not date_val or not jane_id or not amount_val or not method_val:
+                skipped += 1
+                continue
+
+            # Skip total row
+            if str(date_val).strip().upper() in ["TOTAL", "TOTAL PAYMENTS"]:
+                continue
+
+            # Parse date
+            from datetime import datetime
+            if hasattr(date_val, 'date'):
+                payment_date = datetime.combine(date_val.date(), datetime.min.time())
+            else:
+                for fmt in ["%Y-%m-%d", "%m/%d/%Y"]:
+                    try:
+                        payment_date = datetime.strptime(str(date_val).strip(), fmt)
+                        break
+                    except:
+                        continue
+                else:
+                    skipped += 1
+                    continue
+
+            # Parse amount
+            try:
+                amount = float(str(amount_val).replace("$", "").replace(",", "").strip())
+                if amount <= 0:
+                    skipped += 1
+                    continue
+            except:
+                skipped += 1
+                continue
+
+            # Find patient by Jane ID
+            from app.models.patient import Patient
+            patient = db.query(Patient).filter(
+                Patient.jane_id == jane_id,
+                Patient.clinic_id == uuid.UUID(clinic_id)
+            ).first()
+
+            if not patient:
+                errors.append(f"Patient not found: {jane_id}")
+                skipped += 1
+                continue
+
+            # Check duplicate reference
+            if reference_val:
+                existing = db.query(PatientPayment).filter(
+                    PatientPayment.clinic_id == uuid.UUID(clinic_id),
+                    PatientPayment.reference_num == reference_val,
+                    PatientPayment.duplicate_override == False
+                ).first()
+                if existing:
+                    errors.append(f"Duplicate reference: {reference_val}")
+                    skipped += 1
+                    continue
+
+            # Validate method
+            method_map = {"cash": "cash", "etransfer": "etransfer", "e-transfer": "etransfer", "e transfer": "etransfer"}
+            method = method_map.get(method_val.lower())
+            if not method:
+                errors.append(f"Unknown method: {method_val}")
+                skipped += 1
+                continue
+
+            payment = PatientPayment(
+                clinic_id=uuid.UUID(clinic_id),
+                patient_id=patient.id,
+                amount=amount,
+                method=PaymentMethodType(method),
+                reference_num=reference_val,
+                payment_date=payment_date,
+                notes=notes_val,
+                recorded_by=current_user.id,
+            )
+            db.add(payment)
+            db.flush()
+            apply_fifo(payment, db)
+            created += 1
+
+        except Exception as e:
+            errors.append(str(e))
+            skipped += 1
+
+    db.commit()
+    return {
+        "message": "Import complete",
+        "created": created,
+        "skipped": skipped,
+        "errors": errors[:10]
+    }

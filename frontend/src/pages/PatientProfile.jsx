@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPatient } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { getServices, updateSessionService } from '../services/api';
 
 const D = {
   bg: '#07080F', surface: '#0B0E17', card: '#0F1420',
@@ -100,12 +101,27 @@ export default function PatientProfile() {
   const { isAdmin } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [services, setServices] = useState([]);
+  const [editingSession, setEditingSession] = useState(null);
 
-  useEffect(() => {
-    getPatient(id)
-      .then(res => setData(res.data))
-      .finally(() => setLoading(false));
-  }, [id]);
+useEffect(() => {
+  getPatient(id)
+    .then(res => setData(res.data))
+    .finally(() => setLoading(false));
+
+  const TB_CLINIC = 'd3417879-4607-469a-a614-b1ec611af077';
+  getServices(TB_CLINIC).then(res => setServices(res.data));
+}, [id]);
+  const handleServiceChange = async (sessionId, serviceId) => {
+    try {
+      await updateSessionService(id, sessionId, { service_id: serviceId });
+      const res = await getPatient(id);
+      setData(res.data);
+      setEditingSession(null);
+    } catch (err) {
+      alert('Error updating session');
+    }
+  };
 
   if (loading) return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: D.bg }}>
@@ -269,20 +285,55 @@ export default function PatientProfile() {
             )}
           </div>
 
-          {/* Contact info */}
-          <div style={{ background: D.card, border: `1px solid ${D.border}`, borderRadius: 12, padding: '18px 20px' }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: D.text, marginBottom: 14 }}>Contact Information</div>
-            {[
-              { label: 'Phone', value: patient.phone, icon: '📞' },
-              { label: 'Email', value: patient.email, icon: '✉' },
-              { label: 'Address', value: [patient.street_address, patient.city, patient.province, patient.postal_code].filter(Boolean).join(', '), icon: '📍' },
-              { label: 'Date of Birth', value: fmtDate(patient.date_of_birth), icon: '🎂' },
-            ].map((c, i) => (
-              <div key={i} style={{ background: D.surface, borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: D.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 }}>{c.icon} {c.label}</div>
-                <div style={{ fontSize: 13, color: c.value ? D.text : D.muted }}>{c.value || '—'}</div>
-              </div>
-            ))}
+          {/* Sessions by service + Contact info */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* Sessions by service */}
+            <div style={{ background: D.card, border: `1px solid ${D.border}`, borderRadius: 12, padding: '18px 20px' }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: D.text, marginBottom: 14 }}>Sessions by Service</div>
+              {(() => {
+                const counts = {};
+                regular_sessions.forEach(s => {
+                  const name = s.service_name || 'Unassigned';
+                  counts[name] = (counts[name] || 0) + 1;
+                });
+                const total = regular_sessions.length || 1;
+                const colors = [D.azure, D.emerald, D.gold, D.purple, D.coral];
+                return Object.entries(counts)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([name, count], i) => (
+                    <div key={name} style={{ marginBottom: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
+                        <span style={{ color: D.muted, maxWidth: '75%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={name}>{name}</span>
+                        <span style={{ fontWeight: 700, color: colors[i % colors.length] }}>{count}</span>
+                      </div>
+                      <div style={{ height: 6, background: D.border, borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{ width: `${(count / total) * 100}%`, height: '100%', background: colors[i % colors.length], borderRadius: 3 }} />
+                      </div>
+                    </div>
+                  ));
+              })()}
+              {regular_sessions.length === 0 && (
+                <div style={{ fontSize: 12, color: D.muted }}>No sessions yet</div>
+              )}
+            </div>
+
+            {/* Contact info */}
+            <div style={{ background: D.card, border: `1px solid ${D.border}`, borderRadius: 12, padding: '18px 20px' }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: D.text, marginBottom: 14 }}>Contact Information</div>
+              {[
+                { label: 'Phone', value: patient.phone, icon: '📞' },
+                { label: 'Email', value: patient.email, icon: '✉' },
+                { label: 'Address', value: [patient.street_address, patient.city, patient.province, patient.postal_code].filter(Boolean).join(', '), icon: '📍' },
+                { label: 'Date of Birth', value: fmtDate(patient.date_of_birth), icon: '🎂' },
+              ].map((c, i) => (
+                <div key={i} style={{ background: D.surface, borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: D.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 }}>{c.icon} {c.label}</div>
+                  <div style={{ fontSize: 13, color: c.value ? D.text : D.muted }}>{c.value || '—'}</div>
+                </div>
+              ))}
+            </div>
+
           </div>
         </div>
 
@@ -318,7 +369,30 @@ export default function PatientProfile() {
               ) : regular_sessions.map((s, i) => (
                 <tr key={s.id} style={{ background: i % 2 === 0 ? 'transparent' : D.surface + '44' }}>
                   <td style={{ padding: '10px 14px', fontSize: 12, borderBottom: `1px solid ${D.border}`, fontWeight: 600 }}>{fmtDate(s.session_date)}</td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, borderBottom: `1px solid ${D.border}`, color: D.muted, maxWidth: 220 }}>{s.service_name || '—'}</td>
+                  <td style={{ padding: '10px 14px', fontSize: 12, borderBottom: `1px solid ${D.border}`, maxWidth: 220 }}>
+                    {editingSession === s.id ? (
+                      <select
+                        defaultValue={services.find(sv => sv.name === s.service_name)?.id || ''}
+                        onChange={e => handleServiceChange(s.id, e.target.value)}
+                        onBlur={() => setEditingSession(null)}
+                        autoFocus
+                        style={{ width: '100%', padding: '5px 8px', background: D.surface, border: `1px solid ${D.azure}`, borderRadius: 6, color: D.text, fontSize: 12, fontFamily: 'inherit', outline: 'none' }}
+                      >
+                        <option value="">— Select service —</option>
+                        {services.map(sv => (
+                          <option key={sv.id} value={sv.id}>{sv.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span
+                        onClick={() => setEditingSession(s.id)}
+                        style={{ cursor: 'pointer', color: s.service_name ? D.text : D.muted, borderBottom: `1px dashed ${D.border}`, paddingBottom: 1 }}
+                        title="Click to change service"
+                      >
+                        {s.service_name || 'Click to assign service'}
+                      </span>
+                    )}
+                  </td>
                   <td style={{ padding: '10px 14px', fontSize: 12, borderBottom: `1px solid ${D.border}`, color: D.muted }}>{s.duration_minutes ? `${s.duration_minutes} min` : '—'}</td>
                   <td style={{ padding: '10px 14px', fontSize: 12, borderBottom: `1px solid ${D.border}`, color: D.azure, fontWeight: 600 }}>{fmt(s.cost)}</td>
                   <td style={{ padding: '10px 14px', fontSize: 12, borderBottom: `1px solid ${D.border}`, color: D.gold }}>{fmt(s.collected)}</td>

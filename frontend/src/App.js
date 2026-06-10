@@ -9,7 +9,8 @@ import PatientProfile from './pages/PatientProfile';
 import Staff from './pages/Staff';
 import Devices from './pages/Devices';
 import JaneImport from './pages/JaneImport';
-
+import Expenses from './pages/Expenses';
+import Services from './pages/Services';
 
 
 
@@ -55,12 +56,13 @@ function App() {
 
           {/* TouchBrain */}
           <Route path="/tb/overview" element={<ProtectedRoute><ClinicOverview clinicId={TB_CLINIC} clinicName="TouchBrain Counseling" color="#5B8FFF" /></ProtectedRoute>} />
-          <Route path="/tb/services" element={<ProtectedRoute><ComingSoon label="TouchBrain — Services" /></ProtectedRoute>} />
-          <Route path="/tb/devices" element={<ProtectedRoute><Devices /></ProtectedRoute>} />
+          <Route path="/et/services" element={<ProtectedRoute><Services clinicId="0abf11de-ef88-4a3f-aba9-d0f0bd94dce1" clinicName="Elite Touch Wellness" color="#00C896" /></ProtectedRoute>} />
+          <Route path="/tb/services" element={<ProtectedRoute><Services clinicId="d3417879-4607-469a-a614-b1ec611af077" clinicName="TouchBrain Counseling" color="#5B8FFF" /></ProtectedRoute>} />          <Route path="/tb/devices" element={<ProtectedRoute><Devices /></ProtectedRoute>} />
           <Route path="/tb/materials" element={<ProtectedRoute><ComingSoon label="TouchBrain — Materials" /></ProtectedRoute>} />
           <Route path="/tb/staff" element={<ProtectedRoute><Staff /></ProtectedRoute>} />
           <Route path="/tb/patients" element={<ProtectedRoute><Patients /></ProtectedRoute>} />
-          <Route path="/tb/expenses" element={<ProtectedRoute><ComingSoon label="TouchBrain — Expenses" /></ProtectedRoute>} />
+          <Route path="/et/expenses" element={<ProtectedRoute><Expenses clinicId="0abf11de-ef88-4a3f-aba9-d0f0bd94dce1" /></ProtectedRoute>} />
+          <Route path="/tb/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
           <Route path="/tb/import" element={<ProtectedRoute><JaneImport /></ProtectedRoute>} />
           <Route path="/tb/patients/:id" element={<ProtectedRoute><PatientProfile /></ProtectedRoute>} />
 

@@ -150,3 +150,9 @@ export const importInvoices = (clinicId, branchId, file) => {
 };
 
 export default api;
+
+export const getServices = (clinicId) =>
+  api.get('/services/', { params: { clinic_id: clinicId } });
+
+export const updateSessionService = (patientId, sessionId, data) =>
+  api.patch(`/patients/${patientId}/sessions/${sessionId}`, data);

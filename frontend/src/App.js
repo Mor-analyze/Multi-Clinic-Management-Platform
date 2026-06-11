@@ -11,8 +11,9 @@ import Devices from './pages/Devices';
 import JaneImport from './pages/JaneImport';
 import Expenses from './pages/Expenses';
 import Services from './pages/Services';
-
-
+import Finance from './pages/Finance';
+import Compare from './pages/Compare';
+import Demographics from './pages/Demographics';
 
 
 
@@ -43,7 +44,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute><Overview /></ProtectedRoute>} />
-          <Route path="/compare" element={<ProtectedRoute><ComingSoon label="Clinic Comparison" /></ProtectedRoute>} />
+          <Route path="/compare" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
 
           {/* Elite Touch */}
           <Route path="/et/overview" element={<ProtectedRoute><ClinicOverview clinicId={ET_CLINIC} clinicName="Elite Touch Wellness" color="#00C896" /></ProtectedRoute>} />
@@ -65,6 +66,10 @@ function App() {
           <Route path="/tb/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
           <Route path="/tb/import" element={<ProtectedRoute><JaneImport /></ProtectedRoute>} />
           <Route path="/tb/patients/:id" element={<ProtectedRoute><PatientProfile /></ProtectedRoute>} />
+          <Route path="/finance" element={<ProtectedRoute><Finance /></ProtectedRoute>} />
+          <Route path="/tb/demographics" element={<ProtectedRoute><Demographics /></ProtectedRoute>} />
+
+
 
         </Routes>
       </BrowserRouter>

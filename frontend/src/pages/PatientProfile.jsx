@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPatient } from '../services/api';
+import { getPatient, getServices, updateSessionService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
-import { getServices, updateSessionService } from '../services/api';
 
 const D = {
   bg: '#07080F', surface: '#0B0E17', card: '#0F1420',

@@ -85,6 +85,9 @@ export const getForecast = (clinicId, monthsAhead = 6) =>
 export const getDeviceRoi = (branchId) =>
   api.get('/analytics/devices/roi', { params: { branch_id: branchId } });
 
+export const getDemographics = (clinicId) =>
+  api.get('/analytics/demographics', { params: { clinic_id: clinicId } });
+
 // ── DEVICES ──────────────────────────────────────────────────
 export const getDevices = (branchId) =>
   api.get('/devices/', { params: { branch_id: branchId } });

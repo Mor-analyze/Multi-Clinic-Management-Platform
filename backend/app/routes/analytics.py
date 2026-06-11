@@ -5,6 +5,8 @@ from typing import Optional
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 import uuid
+from app.models.patient import Patient
+
 
 from app.models.database import get_db
 from app.models.invoice import Invoice, InvoiceStatus
@@ -285,4 +287,73 @@ def clinic_overview(
         "total_sessions": total_sessions,
         "total_active_patients": total_patients,
         "collection_rate": round(collected / billed * 100, 1) if billed > 0 else 0,
+    }
+    
+    
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
+@router.get("/demographics")
+def patient_demographics(
+    clinic_id: str = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    patients = db.query(Patient).filter(
+        Patient.clinic_id == uuid.UUID(clinic_id),
+        Patient.is_active == True
+    ).all()
+
+    # Age groups
+    today = date.today()
+    age_groups = {"Under 18": 0, "18-30": 0, "31-45": 0, "46-60": 0, "60+": 0, "Unknown": 0}
+    for p in patients:
+        if not p.date_of_birth:
+            age_groups["Unknown"] += 1
+            continue
+        age = relativedelta(today, p.date_of_birth).years
+        if age < 18: age_groups["Under 18"] += 1
+        elif age <= 30: age_groups["18-30"] += 1
+        elif age <= 45: age_groups["31-45"] += 1
+        elif age <= 60: age_groups["46-60"] += 1
+        else: age_groups["60+"] += 1
+
+    # Cities
+    city_counts = {}
+    for p in patients:
+        city = p.city or "Unknown"
+        city_counts[city] = city_counts.get(city, 0) + 1
+    top_cities = sorted(city_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+
+    # Referral sources
+    referral_counts = {}
+    for p in patients:
+        ref = p.referral_source or "Not specified"
+        referral_counts[ref] = referral_counts.get(ref, 0) + 1
+    top_referrals = sorted(referral_counts.items(), key=lambda x: x[1], reverse=True)[:8]
+
+    # New patients per month (last 6 months)
+    monthly_new = []
+    for i in range(5, -1, -1):
+        month_start = today.replace(day=1) - relativedelta(months=i)
+        month_end = month_start + relativedelta(months=1) - relativedelta(days=1)
+        count = sum(1 for p in patients if p.first_visit and month_start <= p.first_visit <= month_end)
+        monthly_new.append({
+            "month": month_start.strftime("%b %Y"),
+            "new_patients": count
+        })
+
+    # Active vs inactive
+    total = db.query(func.count(Patient.id)).filter(Patient.clinic_id == uuid.UUID(clinic_id)).scalar()
+    active = len(patients)
+    inactive = total - active
+
+    return {
+        "total_patients": total,
+        "active_patients": active,
+        "inactive_patients": inactive,
+        "age_groups": [{"group": k, "count": v} for k, v in age_groups.items() if v > 0],
+        "top_cities": [{"city": c, "count": n} for c, n in top_cities],
+        "referral_sources": [{"source": s, "count": n} for s, n in top_referrals],
+        "monthly_new_patients": monthly_new,
     }

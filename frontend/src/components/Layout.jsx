@@ -11,6 +11,7 @@ const D = {
 const NAV = [
   { group: 'Owner View', color: null, items: [
     { id: 'overview', label: 'Combined Overview', icon: '⊞', path: '/' },
+    { id: 'finance', label: 'Finance', icon: '◈', path: '/finance' },
     { id: 'compare', label: 'Clinic Comparison', icon: '◈', path: '/compare' },
   ]},
   { group: 'Elite Touch Wellness', color: '#00C896', items: [
@@ -31,6 +32,7 @@ const NAV = [
     { id: 'tb-patients', label: 'Patients', icon: '○', path: '/tb/patients' },
     { id: 'tb-expenses', label: 'Expenses', icon: '◌', path: '/tb/expenses' },
     { id: 'tb-import', label: 'Jane Import', icon: '↓', path: '/tb/import' },
+    { id: 'tb-demographics', label: 'Demographics', icon: '◑', path: '/tb/demographics' },
   ]},
 ];
 

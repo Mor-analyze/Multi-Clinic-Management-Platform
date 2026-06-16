@@ -42,14 +42,14 @@ jobs:
           pip install -r requirements.txt
 
 
-        - name: Run database migrations
+      - name: Run database migrations
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/clinichub_test
         run: |
           cd backend
           alembic upgrade head
 
-        - name: Create test admin user
+      - name: Create test admin user
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/clinichub_test
         run: |
@@ -64,7 +64,7 @@ jobs:
           db.commit()
           db.close()
           "
-          
+
       - name: Run tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/clinichub_test

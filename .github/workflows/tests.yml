@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [ main ]
 
+
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -39,6 +41,30 @@ jobs:
           cd backend
           pip install -r requirements.txt
 
+
+        - name: Run database migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/clinichub_test
+        run: |
+          cd backend
+          alembic upgrade head
+
+        - name: Create test admin user
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/clinichub_test
+        run: |
+          cd backend
+          python -c "
+          from app.models.database import SessionLocal
+          from app.models.user import User, UserRole
+          from app.services.auth import hash_password
+          db = SessionLocal()
+          admin = User(full_name='Test Admin', email='morteza@clinichub.com', password_hash=hash_password('admin123'), role=UserRole.admin, branch_id=None, is_active=True)
+          db.add(admin)
+          db.commit()
+          db.close()
+          "
+          
       - name: Run tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/clinichub_test
@@ -47,3 +73,4 @@ jobs:
         run: |
           cd backend
           pytest tests/ -v
+          

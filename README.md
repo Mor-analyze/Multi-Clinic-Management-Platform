@@ -4,6 +4,8 @@ A full-stack data platform built for a multi-location healthcare business, cente
 
 Built end-to-end: database design, ETL pipeline, REST API, automated tests, CI/CD, and React frontend.
 
+![Overview](overview.png)
+
 ---
 
 ## 🔧 Tech Stack

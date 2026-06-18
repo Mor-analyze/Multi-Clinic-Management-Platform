@@ -27,7 +27,11 @@ if config.config_file_name is not None:
 from app.models.base import Base
 from app.models import Clinic, Branch, User
 target_metadata = Base.metadata
-
+# Override sqlalchemy.url with DATABASE_URL env var when set (e.g. in CI/CD)
+db_url = os.getenv("DATABASE_URL")
+if db_url:
+    config.set_main_option("sqlalchemy.url", db_url)
+    
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
